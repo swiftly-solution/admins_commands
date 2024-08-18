@@ -29,6 +29,7 @@ commands:Register("slay", function(playerid, args, argsCount, silent, prefix)
     for i = 1, #players do
         local pl = players[i]
         pl:Kill()
+        if not pl:CBasePlayerController():IsValid() then return end
         ReplyToCommand(playerid, config:Fetch("admins.prefix"),
             FetchTranslation("admins.slay.message"):gsub("{ADMIN_NAME}",
                 admin and admin:CBasePlayerController().PlayerName or "CONSOLE"):gsub("{PLAYER_NAME}",
@@ -68,6 +69,7 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
 
     for i = 1, #players do
         local pl = players[i]
+        if not pl:CBaseEntity():IsValid() then return end
         local vel = pl:CBaseEntity().AbsVelocity
         vel.x = vel.x + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
         vel.y = vel.y + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
@@ -75,6 +77,7 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
         pl:CBaseEntity().AbsVelocity = vel
         pl:CBaseEntity().Health = pl:CBaseEntity().Health - health
 
+        if not pl:CBasePlayerController():IsValid() then return end
         ReplyToCommand(playerid, config:Fetch("admins.prefix"),
             FetchTranslation("admins.slap.message"):gsub("{ADMIN_NAME}",
                 admin and admin:CBasePlayerController().PlayerName or "CONSOLE"):gsub("{PLAYER_NAME}",
@@ -108,6 +111,7 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
 
     local pl = players[1]
     local name = args[2]
+    if not pl:CBasePlayerController():IsValid() then return end
     if name == pl:CBasePlayerController().PlayerName then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "Same name.") -- translation
     end
@@ -117,9 +121,10 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
         admin = GetPlayer(playerid)
     end
 
+
     local oldname = pl:CBasePlayerController().PlayerName
     pl:CBasePlayerController().PlayerName = name
-
+    if not admin:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
         FetchTranslation("admins.rename.message"):gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName):gsub(
             "{PLAYER_NAME}", pl:CBasePlayerController().PlayerName)) -- translation
@@ -150,6 +155,7 @@ commands:Register("csay", function(playerid, args, argsCount, silent, prefix)
         end
 
         local message = table.concat(args, " ")
+        if not player:CBasePlayerController():IsValid() then return end
         playermanager:SendMsg(MessageType.Center,
             string.format("%s: %s", player:CBasePlayerController().PlayerName, message))
     end
@@ -227,7 +233,9 @@ commands:Register("addslapmenu", function(playerid, args, argc, silent, prefix)
         local pl = GetPlayer(i)
         if pl then
             if not pl:IsFakeClient() then
-                table.insert(players, { pl:CBasePlayerController().PlayerName, "sw_addslapmenu_selectplayer " .. i })
+                if pl:CBasePlayerController():IsValid() then
+                    table.insert(players, { pl:CBasePlayerController().PlayerName, "sw_addslapmenu_selectplayer " .. i })
+                end
             end
         end
     end
@@ -297,6 +305,7 @@ commands:Register("addslapmenu_selecthealth", function (playerid, args, argc, si
         return
     end
 
+    if not pl:CBaseEntity():IsValid() then return end
     local vel = pl:CBaseEntity().AbsVelocity
     vel.x = vel.x + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
     vel.y = vel.y + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
@@ -305,6 +314,8 @@ commands:Register("addslapmenu_selecthealth", function (playerid, args, argc, si
     pl:CBaseEntity().AbsVelocity = vel
     pl:CBaseEntity().Health = pl:CBaseEntity().Health - AddSlapMenuSelectedHealth[playerid]
 
+    if not player:CBasePlayerController():IsValid() then return end
+    if not pl:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
             FetchTranslation("admins.slap.message"):gsub("{ADMIN_NAME}",
                 player and player:CBasePlayerController().PlayerName):gsub("{PLAYER_NAME}",
@@ -332,7 +343,9 @@ commands:Register("addslaymenu", function(playerid, args, argc, silent, prefix)
         local pl = GetPlayer(i)
         if pl then
             if not pl:IsFakeClient() then
-                table.insert(players, { pl:CBasePlayerController().PlayerName, "sw_addslaymenu_selectplayer " .. i })
+                if pl:CBasePlayerController():IsValid() then
+                    table.insert(players, { pl:CBasePlayerController().PlayerName, "sw_addslaymenu_selectplayer " .. i })
+                end
             end
         end
     end
@@ -367,11 +380,14 @@ commands:Register("addslaymenu_selectplayer", function(playerid, args, argc, sil
 
     AddSlayMenuSelectedPlayer[playerid] = pid
 
+    if not pl:CBaseEntity():IsValid() then return end
+    if not pl:CBasePlayerController():IsValid() then return end
     if pl:CBaseEntity().Health <= 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.slay.already_dead"):gsub("{PLAYER_NAME}", pl:CBasePlayerController().PlayerName))
     end
 
     pl:Kill()
+    if not player:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
             FetchTranslation("admins.slay.message"):gsub("{ADMIN_NAME}",
                 player and player:CBasePlayerController().PlayerName):gsub("{PLAYER_NAME}",
