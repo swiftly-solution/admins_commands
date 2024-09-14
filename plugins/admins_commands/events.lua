@@ -1,5 +1,5 @@
 AddEventHandler("OnPluginStart", function (event)
-    GenerateMenu()   
+    GenerateMenu()
 end)
 
 AddEventHandler("OnAllPluginsLoaded", function(event)

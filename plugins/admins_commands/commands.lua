@@ -18,7 +18,7 @@ commands:Register("slay", function(playerid, args, argsCount, silent, prefix)
 
     local players = FindPlayersByTarget(args[1], false)
     if #players == 0 then
-        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.invalid_player")) -- translation
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.invalid_player"))
     end
 
     local admin = nil
@@ -57,7 +57,7 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
 
     local players = FindPlayersByTarget(args[1], false)
     if #players == 0 then
-        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.") -- translation
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
 
     local health = (args[2] or 0)
@@ -76,6 +76,9 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
         vel.z = vel.z + math.random(100, 300)
         pl:CBaseEntity().AbsVelocity = vel
         pl:CBaseEntity().Health = pl:CBaseEntity().Health - health
+        if pl:CBaseEntity().Health <= 0 then
+            pl:Kill()
+        end
 
         if not pl:CBasePlayerController():IsValid() then return end
         ReplyToCommand(playerid, config:Fetch("admins.prefix"),
@@ -106,14 +109,14 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
 
     local players = FindPlayersByTarget(args[1], false)
     if #players == 0 then
-        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.") -- translation
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
 
     local pl = players[1]
     local name = args[2]
     if not pl:CBasePlayerController():IsValid() then return end
     if name == pl:CBasePlayerController().PlayerName then
-        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "Same name.") -- translation
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "Same name.")
     end
 
     local admin = nil
@@ -121,18 +124,16 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
         admin = GetPlayer(playerid)
     end
 
-
-    local oldname = pl:CBasePlayerController().PlayerName
     pl:CBasePlayerController().PlayerName = name
     if not admin:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
         FetchTranslation("admins.rename.message"):gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName):gsub(
-            "{PLAYER_NAME}", pl:CBasePlayerController().PlayerName)) -- translation
+            "{PLAYER_NAME}", pl:CBasePlayerController().PlayerName))
 end)
 
 commands:Register("csay", function(playerid, args, argsCount, silent, prefix)
     if playerid == -1 then
-        if argc < 1 then
+        if argsCount < 1 then
             return print(string.format(FetchTranslation("admins.csay.syntax"), config:Fetch("admins.prefix"),
                 "sw_"))
         end
@@ -188,31 +189,38 @@ commands:Register("rcon", function(playerid, args, argsCount, silent, prefix)
     server:Execute(cmd)
 end)
 
-local ChangeMap = function(playerid, args, argsCount, silent)
-    if playerid == -1 then
-        if argc < 1 then
-            return print(string.format(FetchTranslation("admins.changemap.syntax"),
-                config:Fetch("admins.prefix"), "sw_"))
-        end
-        local map = args[1]
-        if server:IsMapValid(map) == 0 then
-            return print(string.format(FetchTranslation("admins.invalid_map"),
-                config:Fetch("admins.prefix"), map))
-        end
-        playermanager:SendMsg(MessageType.Chat,
-            string.format(FetchTranslation("admins.changing_map"), config:Fetch("admins.prefix"), map))
+local ChangeMap = function(playerid, args, argsCount, silent, prefix)
+    if playerid ~= -1 then
+        local player = GetPlayer(playerid)
+        if not player then return end
 
-        SetTimeout(3000, function()
-            server:ChangeMap(map)
-        end)
+        local hasAccess = exports["admins"]:HasFlags(playerid, "g")
+
+        if not hasAccess then
+            return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.no_permission"))
+        end
     end
+
+    if argsCount < 1 then
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), string.format(FetchTranslation("admins.changemap.syntax"), prefix))
+    end
+
+    local map = args[1]
+
+    if not server:IsMapValid(map) then
+        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.invalid_map"):gsub("{MAP}", map))
+    end
+
+    playermanager:SendMsg(MessageType.Chat, string.format("%s %s", config:Fetch("admins.prefix"), FetchTranslation("admins.changing_map"):gsub("{MAP}", map)))
+    SetTimeout(3000, function()
+        server:ChangeMap(map, tostring(tonumber(map)) == map)
+    end)
 end
 commands:Register("map", ChangeMap)
 commands:Register("changemap", ChangeMap)
 
 
 local AddSlapMenuSelectedPlayer = {}
-local AddSlapMenuSelectedHealth = {}
 
 commands:Register("addslapmenu", function(playerid, args, argc, silent, prefix)
     if playerid == -1 then return end
@@ -225,7 +233,6 @@ commands:Register("addslapmenu", function(playerid, args, argc, silent, prefix)
     end
 
     AddSlapMenuSelectedPlayer[playerid] = nil
-    AddSlapMenuSelectedHealth[playerid] = nil
 
     local players = {}
 
@@ -295,7 +302,6 @@ commands:Register("addslapmenu_selecthealth", function (playerid, args, argc, si
     if not AddSlapMenuSelectedPlayer[playerid] then return player:HideMenu() end
 
     local health = args[1]
-    AddSlapMenuSelectedHealth[playerid] = health
 
     local pid = AddSlapMenuSelectedPlayer[playerid]
     local pl = GetPlayer(pid)
@@ -305,25 +311,8 @@ commands:Register("addslapmenu_selecthealth", function (playerid, args, argc, si
         return
     end
 
-    if not pl:CBaseEntity():IsValid() then return end
-    local vel = pl:CBaseEntity().AbsVelocity
-    vel.x = vel.x + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
-    vel.y = vel.y + math.random(50, 230) * (math.random(0, 1) == 1 and -1 or 1)
-    vel.z = vel.z + math.random(100, 300)
-
-    pl:CBaseEntity().AbsVelocity = vel
-    pl:CBaseEntity().Health = pl:CBaseEntity().Health - AddSlapMenuSelectedHealth[playerid]
-
-    if not player:CBasePlayerController():IsValid() then return end
-    if not pl:CBasePlayerController():IsValid() then return end
-    ReplyToCommand(playerid, config:Fetch("admins.prefix"),
-            FetchTranslation("admins.slap.message"):gsub("{ADMIN_NAME}",
-                player and player:CBasePlayerController().PlayerName):gsub("{PLAYER_NAME}",
-                pl:CBasePlayerController().PlayerName):gsub("{HEALTH}", tostring(health)))
-
+    player:ExecuteCommand("sw_slap #"..pid.." "..health)
 end)
-
-local AddSlayMenuSelectedPlayer = {}
 
 commands:Register("addslaymenu", function(playerid, args, argc, silent, prefix)
     if playerid == -1 then return end
@@ -334,8 +323,6 @@ commands:Register("addslaymenu", function(playerid, args, argc, silent, prefix)
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"),
                 FetchTranslation("admins.no_permission"))
     end
-
-    AddSlayMenuSelectedPlayer[playerid] = nil
 
     local players = {}
 
@@ -354,7 +341,7 @@ commands:Register("addslaymenu", function(playerid, args, argc, silent, prefix)
         table.insert(players, { FetchTranslation("admins.no_players"), "" })
     end
 
-    menus:RegisterTemporary("addslaymenuadmintempplayer_" .. playerid, FetchTranslation("admins.add.slay"), config:Fetch("admins.amenucolor"), players)
+    menus:RegisterTemporary("addslaymenuadmintempplayer_" .. playerid, FetchTranslation("admins.adminmenu.slay"), config:Fetch("admins.amenucolor"), players)
 
     player:HideMenu()
     player:ShowMenu("addslaymenuadmintempplayer_" .. playerid)
@@ -378,19 +365,5 @@ commands:Register("addslaymenu_selectplayer", function(playerid, args, argc, sil
     local pl = GetPlayer(pid)
     if not pl then return end
 
-    AddSlayMenuSelectedPlayer[playerid] = pid
-
-    if not pl:CBaseEntity():IsValid() then return end
-    if not pl:CBasePlayerController():IsValid() then return end
-    if pl:CBaseEntity().Health <= 0 then
-        return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.slay.already_dead"):gsub("{PLAYER_NAME}", pl:CBasePlayerController().PlayerName))
-    end
-
-    pl:Kill()
-    if not player:CBasePlayerController():IsValid() then return end
-    ReplyToCommand(playerid, config:Fetch("admins.prefix"),
-            FetchTranslation("admins.slay.message"):gsub("{ADMIN_NAME}",
-                player and player:CBasePlayerController().PlayerName):gsub("{PLAYER_NAME}",
-                pl:CBasePlayerController().PlayerName))
-    
+    player:ExecuteCommand("sw_slay #"..pid)
 end)
