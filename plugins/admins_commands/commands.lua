@@ -16,7 +16,7 @@ commands:Register("slay", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.slay.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.invalid_player"))
     end
@@ -55,7 +55,7 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.slap.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
@@ -107,7 +107,7 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.rename.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
@@ -124,11 +124,13 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
         admin = GetPlayer(playerid)
     end
 
-    pl:CBasePlayerController().PlayerName = name
     if not admin:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
-        FetchTranslation("admins.rename.message"):gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName):gsub(
-            "{PLAYER_NAME}", pl:CBasePlayerController().PlayerName))
+    FetchTranslation("admins.rename.message")
+    :gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName)
+    :gsub("{PLAYER_NAME}", pl:CBasePlayerController().PlayerName)
+    :gsub("{NEW_NAME}", name))
+    pl:CBasePlayerController().PlayerName = name
 end)
 
 commands:Register("csay", function(playerid, args, argsCount, silent, prefix)
