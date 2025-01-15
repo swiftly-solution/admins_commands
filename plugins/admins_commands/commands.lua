@@ -124,11 +124,13 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
         admin = GetPlayer(playerid)
     end
 
-    pl:CBasePlayerController().PlayerName = name
     if not admin:CBasePlayerController():IsValid() then return end
     ReplyToCommand(playerid, config:Fetch("admins.prefix"),
-        FetchTranslation("admins.rename.message"):gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName):gsub(
-            "{PLAYER_NAME}", pl:CBasePlayerController().PlayerName))
+    FetchTranslation("admins.rename.message")
+    :gsub("{ADMIN_NAME}", admin:CBasePlayerController().PlayerName)
+    :gsub("{PLAYER_NAME}", pl:CBasePlayerController().PlayerName)
+    :gsub("{NEW_NAME}", name))
+    pl:CBasePlayerController().PlayerName = name
 end)
 
 commands:Register("csay", function(playerid, args, argsCount, silent, prefix)
