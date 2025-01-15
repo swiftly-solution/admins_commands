@@ -16,7 +16,7 @@ commands:Register("slay", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.slay.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), FetchTranslation("admins.invalid_player"))
     end
@@ -55,7 +55,7 @@ commands:Register("slap", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.slap.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
@@ -107,7 +107,7 @@ commands:Register("rename", function(playerid, args, argsCount, silent, prefix)
             string.format(FetchTranslation("admins.rename.syntax"), prefix))
     end
 
-    local players = FindPlayersByTarget(args[1], false)
+    local players = FindPlayersByTarget(args[1], true)
     if #players == 0 then
         return ReplyToCommand(playerid, config:Fetch("admins.prefix"), "No players found.")
     end
